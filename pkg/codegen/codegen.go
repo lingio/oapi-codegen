@@ -193,7 +193,11 @@ func Generate(swagger *openapi3.Swagger, packageName string, serviceName string,
 	w := bufio.NewWriter(&buf)
 
 	externalImports := importMapping.GoImports()
-	importsOut, err := GenerateImports(t, externalImports, packageName, serviceName)
+	addModelImport := false
+	if opts.GenerateEchoServer {
+		addModelImport = true
+	}
+	importsOut, err := GenerateImports(t, externalImports, packageName, serviceName, addModelImport)
 	if err != nil {
 		return "", errors.Wrap(err, "error generating imports")
 	}
@@ -550,7 +554,7 @@ func GenerateEnums(t *template.Template, types []TypeDefinition) (string, error)
 }
 
 // Generate our import statements and package definition.
-func GenerateImports(t *template.Template, externalImports []string, packageName string, serviceName string) (string, error) {
+func GenerateImports(t *template.Template, externalImports []string, packageName string, serviceName string, addModelImport bool) (string, error) {
 	var buf bytes.Buffer
 	w := bufio.NewWriter(&buf)
 	context := struct {
@@ -558,9 +562,11 @@ func GenerateImports(t *template.Template, externalImports []string, packageName
 		PackageName      string
 		ModelPackageName string
 	}{
-		ExternalImports:  externalImports,
-		PackageName:      packageName,
-		ModelPackageName: fmt.Sprintf("\"github.com/lingio/%s/models\"", serviceName),
+		ExternalImports: externalImports,
+		PackageName:     packageName,
+	}
+	if addModelImport {
+		context.ModelPackageName = fmt.Sprintf("\"github.com/lingio/%s/models\"", serviceName)
 	}
 	err := t.ExecuteTemplate(w, "imports.tmpl", context)
 	if err != nil {
