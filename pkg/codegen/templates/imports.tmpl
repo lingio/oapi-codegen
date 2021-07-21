@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	{{if neq .ModelPackageName ""}} . {{.ModelPackageName}}{{end}}
+	{{if ne .ModelPackageName ""}} . {{.ModelPackageName}}{{end}}
 	"github.com/deepmap/oapi-codegen/pkg/runtime"
 	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 	"github.com/getkin/kin-openapi/openapi3"
