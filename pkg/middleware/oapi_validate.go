@@ -52,7 +52,7 @@ func OapiValidatorFromYamlFile(path string) (echo.MiddlewareFunc, error) {
 }
 
 // Create a validator from a swagger object.
-func OapiRequestValidator(swagger *openapi3.Swagger) echo.MiddlewareFunc {
+func OapiRequestValidator(swagger *openapi3.T) echo.MiddlewareFunc {
 	return OapiRequestValidatorWithOptions(swagger, nil)
 }
 
@@ -66,7 +66,7 @@ type Options struct {
 }
 
 // Create a validator from a swagger object, with validation options
-func OapiRequestValidatorWithOptions(swagger *openapi3.Swagger, options *Options) echo.MiddlewareFunc {
+func OapiRequestValidatorWithOptions(swagger *openapi3.T, options *Options) echo.MiddlewareFunc {
 	router, err := legacy.NewRouter(swagger)
 	if err != nil {
 		panic(err)
