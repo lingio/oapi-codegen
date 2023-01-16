@@ -123,7 +123,10 @@ func (pd ParameterDefinition) GoVariableName() string {
 }
 
 func (pd ParameterDefinition) GoName() string {
-	return ToCamelCase(pd.ParamName)
+	if pd.ParamName == "id" {
+		return "id"
+	}
+	return strings.ReplaceAll(ToCamelCase(pd.ParamName), "Id", "ID")
 }
 
 func (pd ParameterDefinition) IndirectOptional() bool {
