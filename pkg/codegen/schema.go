@@ -97,12 +97,13 @@ type Constants struct {
 //
 // Let's use this example schema:
 // components:
-//  schemas:
-//    Person:
-//      type: object
-//      properties:
-//      name:
-//        type: string
+//
+//	schemas:
+//	  Person:
+//	    type: object
+//	    properties:
+//	    name:
+//	      type: string
 type TypeDefinition struct {
 	// The name of the type, eg, type <...> Person
 	TypeName string
@@ -195,6 +196,14 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
 		}
 		outSchema.GoType = typeName
 		return outSchema, nil
+	}
+
+	if extension, ok := schema.Extensions[extPropGoTypeSkipOptionalPointer]; ok {
+		skipOptionalPointer, err := extParsePropGoTypeSkipOptionalPointer(extension)
+		if err != nil {
+			return outSchema, fmt.Errorf("invalid value for %q: %w", extPropGoTypeSkipOptionalPointer, err)
+		}
+		outSchema.SkipOptionalPointer = skipOptionalPointer
 	}
 
 	// Schema type and format, eg. string / binary
@@ -416,7 +425,6 @@ func GenFieldsFromProperties(props []Property) []string {
 			// Make sure the actual field is separated by a newline.
 			field += fmt.Sprintf("\n%s\n", StringToGoComment(p.Description))
 		}
-		field += fmt.Sprintf("    %s %s", p.GoFieldName(), p.GoTypeDef())
 
 		// Support x-omitempty
 		omitEmpty := true
@@ -425,6 +433,16 @@ func GenFieldsFromProperties(props []Property) []string {
 				omitEmpty = extOmitEmpty
 			}
 		}
+
+		// Check x-go-type-skip-optional-pointer, which will override if the type
+		// should be a pointer or not when the field is optional.
+		if extension, ok := p.ExtensionProps.Extensions[extPropGoTypeSkipOptionalPointer]; ok {
+			if skipOptionalPointer, err := extParsePropGoTypeSkipOptionalPointer(extension); err == nil {
+				p.Schema.SkipOptionalPointer = skipOptionalPointer
+			}
+		}
+
+		field += fmt.Sprintf("    %s %s", p.GoFieldName(), p.GoTypeDef())
 
 		if p.Required || p.Nullable || !omitEmpty {
 			field += fmt.Sprintf(" `json:\"%s\"`", p.JsonFieldName)
