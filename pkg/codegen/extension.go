@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	extPropGoType    = "x-go-type"
-	extPropOmitEmpty = "x-omitempty"
+	extPropGoType                    = "x-go-type"
+	extPropOmitEmpty                 = "x-omitempty"
+	extPropGoTypeSkipOptionalPointer = "x-go-type-skip-optional-pointer"
 )
 
 func extTypeName(extPropValue interface{}) (string, error) {
@@ -23,6 +24,19 @@ func extTypeName(extPropValue interface{}) (string, error) {
 	}
 
 	return name, nil
+}
+
+func extParsePropGoTypeSkipOptionalPointer(extPropValue interface{}) (bool, error) {
+	raw, ok := extPropValue.(json.RawMessage)
+	if !ok {
+		return false, fmt.Errorf("failed to convert type: %T", extPropValue)
+	}
+
+	var goTypeSkipOptionalPointer bool
+	if err := json.Unmarshal(raw, &goTypeSkipOptionalPointer); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal json")
+	}
+	return goTypeSkipOptionalPointer, nil
 }
 
 func extParseOmitEmpty(extPropValue interface{}) (bool, error) {
