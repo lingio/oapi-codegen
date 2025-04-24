@@ -181,9 +181,9 @@ func Generate(swagger *openapi3.T, packageName string, serviceName string, opts 
 		}
 	}
 
-	var inlinedSpec string
+	var embeddedSpec string
 	if opts.EmbedSpec {
-		inlinedSpec, err = GenerateInlinedSpec(t, importMapping, swagger)
+		embeddedSpec, err = GenerateEmbeddedSpec(t, importMapping, swagger)
 		if err != nil {
 			return "", errors.Wrap(err, "error generating Go handlers for Paths")
 		}
@@ -244,7 +244,7 @@ func Generate(swagger *openapi3.T, packageName string, serviceName string, opts 
 	}
 
 	if opts.EmbedSpec {
-		_, err = w.WriteString(inlinedSpec)
+		_, err = w.WriteString(embeddedSpec)
 		if err != nil {
 			return "", errors.Wrap(err, "error writing inlined spec")
 		}
