@@ -3,13 +3,14 @@ package runtime
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deepmap/oapi-codegen/pkg/types"
 	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lingio/oapi-codegen/pkg/types"
 
 	"github.com/pkg/errors"
 )
