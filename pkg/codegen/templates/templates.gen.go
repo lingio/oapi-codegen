@@ -919,9 +919,15 @@ func (w *ServerInterfaceWrapper) {{.OperationId}} (ctx echo.Context) error {
     var params {{.OperationId}}Params
 {{range $paramIdx, $param := .QueryParams}}// ------------- {{if .Required}}Required{{else}}Optional{{end}} query parameter "{{.ParamName}}" -------------
     {{if .IsStyled}}
-    err = runtime.BindQueryParameter("{{.Style}}", {{.Explode}}, {{.Required}}, "{{.ParamName}}", ctx.QueryParams(), &params.{{.GoName}})
+    err = runtime.BindQueryParameter("{{.Style}}", {{.Explode}}, {{or .Required .Schema.SkipOptionalPointer}}, "{{.ParamName}}", ctx.QueryParams(), &params.{{.GoName}})
     if err != nil {
+        {{if .Schema.SkipOptionalPointer}}
+        if !strings.Contains(err.Error(), "is required") { // skip optional pointer
+            return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter {{.ParamName}}: %s", err))
+        }
+        {{else}}
         return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter {{.ParamName}}: %s", err))
+        {{end}}
     }
     {{else}}
     if paramValue := ctx.QueryParam("{{.ParamName}}"); paramValue != "" {
