@@ -59,12 +59,12 @@ func (s Schema) GetAdditionalTypeDefs() []TypeDefinition {
 }
 
 type Property struct {
-	Description    string
-	JsonFieldName  string
-	Schema         Schema
-	Required       bool
-	Nullable       bool
-	ExtensionProps *openapi3.ExtensionProps
+	Description   string
+	JsonFieldName string
+	Schema        Schema
+	Required      bool
+	Nullable      bool
+	Extensions    map[string]interface{}
 }
 
 func (p Property) GoFieldName() string {
@@ -209,17 +209,17 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
 	// Schema type and format, eg. string / binary
 	t := schema.Type
 	// Handle objects and empty schemas first as a special case
-	if t == "" || t == "object" {
+	if schemaTypeIsEmpty(t) || t.Is("object") {
 		var outType string
 
 		if len(schema.Properties) == 0 && !SchemaHasAdditionalProperties(schema) {
 			// If the object has no properties or additional properties, we
 			// have some special cases for its type.
-			if t == "object" {
+			if t.Is("object") {
 				// We have an object with no properties. This is a generic object
 				// expressed as a map.
 				outType = "map[string]interface{}"
-			} else { // t == ""
+			} else { // no type designator
 				// If we don't even have the object designator, we're a completely
 				// generic type.
 				outType = "interface{}"
@@ -258,12 +258,12 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
 					description = p.Value.Description
 				}
 				prop := Property{
-					JsonFieldName:  pName,
-					Schema:         pSchema,
-					Required:       required,
-					Description:    description,
-					Nullable:       p.Value.Nullable,
-					ExtensionProps: &p.Value.ExtensionProps,
+					JsonFieldName: pName,
+					Schema:        pSchema,
+					Required:      required,
+					Description:   description,
+					Nullable:      p.Value.Nullable,
+					Extensions:    p.Value.Extensions,
 				}
 				outSchema.Properties = append(outSchema.Properties, prop)
 			}
@@ -272,8 +272,8 @@ func GenerateGoSchema(sref *openapi3.SchemaRef, path []string) (Schema, error) {
 			outSchema.AdditionalPropertiesType = &Schema{
 				GoType: "interface{}",
 			}
-			if schema.AdditionalProperties != nil {
-				additionalSchema, err := GenerateGoSchema(schema.AdditionalProperties, path)
+			if schema.AdditionalProperties.Schema != nil {
+				additionalSchema, err := GenerateGoSchema(schema.AdditionalProperties.Schema, path)
 				if err != nil {
 					return Schema{}, errors.Wrap(err, "error generating type for additional properties")
 				}
@@ -329,8 +329,8 @@ func resolveType(schema *openapi3.Schema, path []string, outSchema *Schema) erro
 	f := schema.Format
 	t := schema.Type
 
-	switch t {
-	case "array":
+	switch {
+	case t.Is("array"):
 		// For arrays, we'll get the type of the Items and throw a
 		// [] in front of it.
 		arrayType, err := GenerateGoSchema(schema.Items, path)
@@ -345,7 +345,7 @@ func resolveType(schema *openapi3.Schema, path []string, outSchema *Schema) erro
 			outSchema.AdditionalTypes = append(outSchema.AdditionalTypes, additionalTypes...)
 		}
 		outSchema.Properties = arrayType.Properties
-	case "integer":
+	case t.Is("integer"):
 		// We default to int if format doesn't ask for something else.
 		if f == "int64" {
 			outSchema.GoType = "int64"
@@ -360,7 +360,7 @@ func resolveType(schema *openapi3.Schema, path []string, outSchema *Schema) erro
 		} else {
 			return fmt.Errorf("invalid integer format: %s", f)
 		}
-	case "number":
+	case t.Is("number"):
 		// We default to float for "number"
 		if f == "double" {
 			outSchema.GoType = "float64"
@@ -369,12 +369,12 @@ func resolveType(schema *openapi3.Schema, path []string, outSchema *Schema) erro
 		} else {
 			return fmt.Errorf("invalid number format: %s", f)
 		}
-	case "boolean":
+	case t.Is("boolean"):
 		if f != "" {
 			return fmt.Errorf("invalid format (%s) for boolean", f)
 		}
 		outSchema.GoType = "bool"
-	case "string":
+	case t.Is("string"):
 		// Special case string formats here.
 		switch f {
 		case "byte":
@@ -393,7 +393,7 @@ func resolveType(schema *openapi3.Schema, path []string, outSchema *Schema) erro
 			outSchema.GoType = "string"
 		}
 	default:
-		return fmt.Errorf("unhandled Schema type: %s", t)
+		return fmt.Errorf("unhandled Schema type: %s", strings.Join(t.Slice(), ", "))
 	}
 	return nil
 }
@@ -428,15 +428,15 @@ func GenFieldsFromProperties(props []Property) []string {
 
 		// Support x-omitempty
 		omitEmpty := true
-		if _, ok := p.ExtensionProps.Extensions[extPropOmitEmpty]; ok {
-			if extOmitEmpty, err := extParseOmitEmpty(p.ExtensionProps.Extensions[extPropOmitEmpty]); err == nil {
+		if _, ok := p.Extensions[extPropOmitEmpty]; ok {
+			if extOmitEmpty, err := extParseOmitEmpty(p.Extensions[extPropOmitEmpty]); err == nil {
 				omitEmpty = extOmitEmpty
 			}
 		}
 
 		// Check x-go-type-skip-optional-pointer, which will override if the type
 		// should be a pointer or not when the field is optional.
-		if extension, ok := p.ExtensionProps.Extensions[extPropGoTypeSkipOptionalPointer]; ok {
+		if extension, ok := p.Extensions[extPropGoTypeSkipOptionalPointer]; ok {
 			if skipOptionalPointer, err := extParsePropGoTypeSkipOptionalPointer(extension); err == nil {
 				p.Schema.SkipOptionalPointer = skipOptionalPointer
 			}

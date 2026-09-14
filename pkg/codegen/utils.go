@@ -101,7 +101,7 @@ func SortedSchemaKeys(dict map[string]*openapi3.SchemaRef) []string {
 
 // This function is the same as above, except it sorts the keys for a Paths
 // dictionary.
-func SortedPathsKeys(dict openapi3.Paths) []string {
+func SortedPathsKeys(dict map[string]*openapi3.PathItem) []string {
 	keys := make([]string, len(dict))
 	i := 0
 	for key := range dict {
@@ -124,8 +124,10 @@ func SortedOperationsKeys(dict map[string]*openapi3.Operation) []string {
 	return keys
 }
 
-// This function returns Responses dictionary keys in sorted order
-func SortedResponsesKeys(dict openapi3.Responses) []string {
+// This function returns Responses dictionary keys in sorted order. It accepts
+// both the operation level responses (openapi3.Responses.Map()) and the
+// components level ones (openapi3.ResponseBodies).
+func SortedResponsesKeys(dict map[string]*openapi3.ResponseRef) []string {
 	keys := make([]string, len(dict))
 	i := 0
 	for key := range dict {
@@ -211,7 +213,6 @@ func StringInArray(str string, array []string) bool {
 // #/components/responses/Baz -> Baz
 // Remote components (document.json#/Foo) are supported if they present in --import-mapping
 // URL components (http://deepmap.com/schemas/document.json#Foo) are supported if they present in --import-mapping
-//
 func RefPathToGoType(refPath string) (string, error) {
 	if refPath[0] == '#' {
 		pathParts := strings.Split(refPath, "/")
@@ -241,7 +242,6 @@ func RefPathToGoType(refPath string) (string, error) {
 // ./local/file.yml#/components/parameters/Bar  -> true
 // ./local/file.yml                             -> false
 // The function can be used to check whether RefPathToGoType($ref) is possible.
-//
 func IsGoTypeReference(ref string) bool {
 	return ref != "" && !IsWholeDocumentReference(ref)
 }
@@ -252,7 +252,6 @@ func IsGoTypeReference(ref string) bool {
 // ./local/file.yml                                     -> true
 // http://deepmap.com/schemas/document.json             -> true
 // http://deepmap.com/schemas/document.json#/Foo        -> false
-//
 func IsWholeDocumentReference(ref string) bool {
 	return ref != "" && !strings.ContainsAny(ref, "#")
 }
@@ -260,14 +259,15 @@ func IsWholeDocumentReference(ref string) bool {
 // This function converts a swagger style path URI with parameters to a
 // Echo compatible path URI. We need to replace all of Swagger parameters with
 // ":param". Valid input parameters are:
-//   {param}
-//   {param*}
-//   {.param}
-//   {.param*}
-//   {;param}
-//   {;param*}
-//   {?param}
-//   {?param*}
+//
+//	{param}
+//	{param*}
+//	{.param}
+//	{.param*}
+//	{;param}
+//	{;param*}
+//	{?param}
+//	{?param*}
 func SwaggerUriToEchoUri(uri string) string {
 	return pathParamRE.ReplaceAllString(uri, ":$1")
 }
@@ -275,14 +275,15 @@ func SwaggerUriToEchoUri(uri string) string {
 // This function converts a swagger style path URI with parameters to a
 // Chi compatible path URI. We need to replace all of Swagger parameters with
 // "{param}". Valid input parameters are:
-//   {param}
-//   {param*}
-//   {.param}
-//   {.param*}
-//   {;param}
-//   {;param*}
-//   {?param}
-//   {?param*}
+//
+//	{param}
+//	{param*}
+//	{.param}
+//	{.param*}
+//	{;param}
+//	{;param*}
+//	{?param}
+//	{?param*}
 func SwaggerUriToChiUri(uri string) string {
 	return pathParamRE.ReplaceAllString(uri, "{$1}")
 }
@@ -531,14 +532,21 @@ func SchemaNameToTypeName(name string) string {
 // you must specify an additionalProperties type
 // If additionalProperties it true/false, this field will be non-nil.
 func SchemaHasAdditionalProperties(schema *openapi3.Schema) bool {
-	if schema.AdditionalPropertiesAllowed != nil && *schema.AdditionalPropertiesAllowed {
+	if allowed := schema.AdditionalProperties.Has; allowed != nil && *allowed {
 		return true
 	}
 
-	if schema.AdditionalProperties != nil {
+	if schema.AdditionalProperties.Schema != nil {
 		return true
 	}
 	return false
+}
+
+// schemaTypeIsEmpty returns true when a schema carries no type designator at
+// all. Since OpenAPI 3.1 a schema may have several types, but we only generate
+// code for the single type case.
+func schemaTypeIsEmpty(t *openapi3.Types) bool {
+	return t == nil || len(*t) == 0
 }
 
 // This converts a path, like Object/field1/nestedField into a go

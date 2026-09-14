@@ -30,7 +30,7 @@ func TestExamplePetStoreCodeGeneration(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Run our code generation:
-	code, err := Generate(swagger, packageName, opts)
+	code, err := Generate(swagger, packageName, "", opts)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, code)
 
@@ -75,7 +75,7 @@ func TestExamplePetStoreCodeGenerationWithUserTemplates(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Run our code generation:
-	code, err := Generate(swagger, packageName, opts)
+	code, err := Generate(swagger, packageName, "", opts)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, code)
 
@@ -104,7 +104,7 @@ func TestExamplePetStoreParseFunction(t *testing.T) {
 	findPetByIDResponse, err := examplePetstoreClient.ParseFindPetByIdResponse(cannedResponse)
 	assert.NoError(t, err)
 	assert.NotNil(t, findPetByIDResponse.JSON200)
-	assert.Equal(t, int64(5), findPetByIDResponse.JSON200.Id)
+	assert.Equal(t, int64(5), findPetByIDResponse.JSON200.ID)
 	assert.Equal(t, "testpet", findPetByIDResponse.JSON200.Name)
 	assert.NotNil(t, findPetByIDResponse.JSON200.Tag)
 	assert.Equal(t, "cat", *findPetByIDResponse.JSON200.Tag)
@@ -122,11 +122,11 @@ func TestExampleOpenAPICodeGeneration(t *testing.T) {
 	}
 
 	// Get a spec from the test definition in this file:
-	swagger, err := openapi3.NewSwaggerLoader().LoadSwaggerFromData([]byte(testOpenAPIDefinition))
+	swagger, err := openapi3.NewLoader().LoadFromData([]byte(testOpenAPIDefinition))
 	assert.NoError(t, err)
 
 	// Run our code generation:
-	code, err := Generate(swagger, packageName, opts)
+	code, err := Generate(swagger, packageName, "", opts)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, code)
 

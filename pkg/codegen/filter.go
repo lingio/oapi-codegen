@@ -11,12 +11,14 @@ func filterOperationsByTag(swagger *openapi3.T, opts Options) {
 	}
 }
 
-func excludeOperationsWithTags(paths openapi3.Paths, tags []string) {
+func excludeOperationsWithTags(paths *openapi3.Paths, tags []string) {
 	includeOperationsWithTags(paths, tags, true)
 }
 
-func includeOperationsWithTags(paths openapi3.Paths, tags []string, exclude bool) {
-	for _, pathItem := range paths {
+func includeOperationsWithTags(paths *openapi3.Paths, tags []string, exclude bool) {
+	// Map() hands back a copy of the map, but the path items in it are shared,
+	// and we only ever modify those.
+	for _, pathItem := range paths.Map() {
 		ops := pathItem.Operations()
 		names := make([]string, 0, len(ops))
 		for name, op := range ops {
@@ -30,7 +32,7 @@ func includeOperationsWithTags(paths openapi3.Paths, tags []string, exclude bool
 	}
 }
 
-//operationHasTag returns true if the operation is tagged with any of tags
+// operationHasTag returns true if the operation is tagged with any of tags
 func operationHasTag(op *openapi3.Operation, tags []string) bool {
 	if op == nil {
 		return false

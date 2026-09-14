@@ -107,7 +107,7 @@ func genResponseUnmarshal(op *OperationDefinition) string {
 	}
 
 	// Add a case for each possible response:
-	responses := op.Spec.Responses
+	responses := op.Spec.Responses.Map()
 	for _, typeDefinition := range typeDefinitions {
 
 		responseRef, ok := responses[typeDefinition.ResponseName]

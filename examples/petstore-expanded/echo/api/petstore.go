@@ -12,8 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run github.com/lingio/oapi-codegen/cmd/oapi-codegen --config=types.cfg.yaml ../../petstore-expanded.yaml
-//go:generate go run github.com/lingio/oapi-codegen/cmd/oapi-codegen --config=server.cfg.yaml ../../petstore-expanded.yaml
+// The spec is copied into this package because the generated server code embeds
+// it, and go:embed cannot reach outside of the package directory.
+//go:generate cp ../../petstore-expanded.yaml spec.yaml
+//go:generate go run github.com/lingio/oapi-codegen/cmd/oapi-codegen --config=types.cfg.yaml spec.yaml
+//go:generate go run github.com/lingio/oapi-codegen/cmd/oapi-codegen --config=server.cfg.yaml spec.yaml
 
 package api
 
@@ -97,11 +100,11 @@ func (p *PetStore) AddPet(ctx echo.Context) error {
 	var pet Pet
 	pet.Name = newPet.Name
 	pet.Tag = newPet.Tag
-	pet.Id = p.NextId
+	pet.ID = p.NextId
 	p.NextId = p.NextId + 1
 
 	// Insert into map
-	p.Pets[pet.Id] = pet
+	p.Pets[pet.ID] = pet
 
 	// Now, we have to return the NewPet
 	err = ctx.JSON(http.StatusCreated, pet)

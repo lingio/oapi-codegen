@@ -1,4 +1,7 @@
-//go:generate go run github.com/lingio/oapi-codegen/cmd/oapi-codegen --package=api --generate types,chi-server,spec -o petstore.gen.go ../../petstore-expanded.yaml
+// The spec is copied into this package because the generated code embeds it,
+// and go:embed cannot reach outside of the package directory.
+//go:generate cp ../../petstore-expanded.yaml spec.yaml
+//go:generate go run github.com/lingio/oapi-codegen/cmd/oapi-codegen --package=api --generate types,chi-server,spec -o petstore.gen.go spec.yaml
 
 package api
 
@@ -84,11 +87,11 @@ func (p *PetStore) AddPet(w http.ResponseWriter, r *http.Request) {
 	var pet Pet
 	pet.Name = newPet.Name
 	pet.Tag = newPet.Tag
-	pet.Id = p.NextId
+	pet.ID = p.NextId
 	p.NextId = p.NextId + 1
 
 	// Insert into map
-	p.Pets[pet.Id] = pet
+	p.Pets[pet.ID] = pet
 
 	// Now, we have to return the NewPet
 	w.WriteHeader(http.StatusCreated)

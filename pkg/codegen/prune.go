@@ -26,7 +26,7 @@ func walkSwagger(swagger *openapi3.T, doFn func(RefWrapper) (bool, error)) error
 		return nil
 	}
 
-	for _, p := range swagger.Paths {
+	for _, p := range swagger.Paths.Map() {
 		for _, param := range p.Parameters {
 			walkParameterRef(param, doFn)
 		}
@@ -35,7 +35,7 @@ func walkSwagger(swagger *openapi3.T, doFn func(RefWrapper) (bool, error)) error
 		}
 	}
 
-	walkComponents(&swagger.Components, doFn)
+	walkComponents(swagger.Components, doFn)
 
 	return nil
 }
@@ -52,7 +52,7 @@ func walkOperation(op *openapi3.Operation, doFn func(RefWrapper) (bool, error)) 
 
 	_ = walkRequestBodyRef(op.RequestBody, doFn)
 
-	for _, response := range op.Responses {
+	for _, response := range op.Responses.Map() {
 		walkResponseRef(response, doFn)
 	}
 
@@ -144,7 +144,7 @@ func walkSchemaRef(ref *openapi3.SchemaRef, doFn func(RefWrapper) (bool, error))
 		walkSchemaRef(ref, doFn)
 	}
 
-	walkSchemaRef(ref.Value.AdditionalProperties, doFn)
+	walkSchemaRef(ref.Value.AdditionalProperties.Schema, doFn)
 
 	return nil
 }
@@ -273,7 +273,7 @@ func walkCallbackRef(ref *openapi3.CallbackRef, doFn func(RefWrapper) (bool, err
 		return nil
 	}
 
-	for _, pathItem := range *ref.Value {
+	for _, pathItem := range ref.Value.Map() {
 		for _, parameter := range pathItem.Parameters {
 			walkParameterRef(parameter, doFn)
 		}
@@ -393,6 +393,11 @@ func findComponentRefs(swagger *openapi3.T) []string {
 
 func removeOrphanedComponents(swagger *openapi3.T, refs []string) int {
 	countRemoved := 0
+
+	// A spec doesn't have to define any components at all.
+	if swagger.Components == nil {
+		return countRemoved
+	}
 
 	for key, _ := range swagger.Components.Schemas {
 		ref := fmt.Sprintf("#/components/schemas/%s", key)
