@@ -268,7 +268,7 @@ func (o *OperationDefinition) SummaryAsComment() string {
 func (o *OperationDefinition) GetResponseTypeDefinitions() ([]ResponseTypeDefinition, error) {
 	var tds []ResponseTypeDefinition
 
-	responses := o.Spec.Responses
+	responses := o.Spec.Responses.Map()
 	sortedResponsesKeys := SortedResponsesKeys(responses)
 	for _, responseName := range sortedResponsesKeys {
 		responseRef := responses[responseName]
@@ -384,8 +384,9 @@ func FilterParameterDefinitionByType(params []ParameterDefinition, in string) []
 func OperationDefinitions(swagger *openapi3.T) ([]OperationDefinition, error) {
 	var operations []OperationDefinition
 
-	for _, requestPath := range SortedPathsKeys(swagger.Paths) {
-		pathItem := swagger.Paths[requestPath]
+	paths := swagger.Paths.Map()
+	for _, requestPath := range SortedPathsKeys(paths) {
+		pathItem := paths[requestPath]
 		// These are parameters defined for all methods on a given path. They
 		// are shared by all methods.
 		globalParams, err := DescribeParameters(pathItem.Parameters, nil)
@@ -408,7 +409,6 @@ func OperationDefinitions(swagger *openapi3.T) ([]OperationDefinition, error) {
 					return nil, fmt.Errorf("error generating default OperationID for %s/%s: %s",
 						opName, requestPath, err)
 				}
-				op.OperationID = op.OperationID
 			} else {
 				op.OperationID = ToCamelCase(op.OperationID)
 			}
@@ -605,11 +605,11 @@ func GenerateParamsTypes(op OperationDefinition) []TypeDefinition {
 			})
 		}
 		prop := Property{
-			Description:    param.Spec.Description,
-			JsonFieldName:  param.ParamName,
-			Required:       param.Required,
-			Schema:         pSchema,
-			ExtensionProps: &param.Spec.ExtensionProps,
+			Description:   param.Spec.Description,
+			JsonFieldName: param.ParamName,
+			Required:      param.Required,
+			Schema:        pSchema,
+			Extensions:    param.Spec.Extensions,
 		}
 		s.Properties = append(s.Properties, prop)
 	}

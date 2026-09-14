@@ -193,10 +193,9 @@ func Generate(swagger *openapi3.T, packageName string, serviceName string, opts 
 	w := bufio.NewWriter(&buf)
 
 	externalImports := importMapping.GoImports()
-	addModelImport := false
-	if opts.GenerateEchoServer {
-		addModelImport = true
-	}
+	// The model package lives in the service repo the code is generated into,
+	// so we can only import it when we know which service that is.
+	addModelImport := opts.GenerateEchoServer && serviceName != ""
 	importsOut, err := GenerateImports(t, externalImports, packageName, serviceName, addModelImport)
 	if err != nil {
 		return "", errors.Wrap(err, "error generating imports")
@@ -273,6 +272,11 @@ func Generate(swagger *openapi3.T, packageName string, serviceName string, opts 
 }
 
 func GenerateTypeDefinitions(t *template.Template, swagger *openapi3.T, ops []OperationDefinition, excludeSchemas []string) (string, error) {
+	// A spec doesn't have to define any components at all.
+	if swagger.Components == nil {
+		swagger.Components = &openapi3.Components{}
+	}
+
 	schemaTypes, err := GenerateTypesForSchemas(t, swagger.Components.Schemas, excludeSchemas)
 	if err != nil {
 		return "", errors.Wrap(err, "error generating Go types for component schemas")
@@ -425,7 +429,7 @@ func GenerateTypesForParameters(t *template.Template, params map[string]*openapi
 
 // Generates type definitions for any custom types defined in the
 // components/responses section of the Swagger spec.
-func GenerateTypesForResponses(t *template.Template, responses openapi3.Responses) ([]TypeDefinition, error) {
+func GenerateTypesForResponses(t *template.Template, responses openapi3.ResponseBodies) ([]TypeDefinition, error) {
 	var types []TypeDefinition
 
 	for _, responseName := range SortedResponsesKeys(responses) {

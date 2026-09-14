@@ -232,7 +232,7 @@ func TestParameterBinding(t *testing.T) {
 
 	expectedComplexObject := ComplexObject{
 		Object:  expectedObject,
-		Id:      12345,
+		ID:      12345,
 		IsAdmin: true,
 	}
 
@@ -491,7 +491,7 @@ func TestClientPathParams(t *testing.T) {
 
 	expectedComplexObject := ComplexObject{
 		Object:  expectedObject,
-		Id:      12345,
+		ID:      12345,
 		IsAdmin: true,
 	}
 
@@ -612,7 +612,7 @@ func TestClientQueryParams(t *testing.T) {
 
 	expectedComplexObject := ComplexObject{
 		Object:  expectedObject2,
-		Id:      12345,
+		ID:      12345,
 		IsAdmin: true,
 	}
 
