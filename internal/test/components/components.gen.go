@@ -926,33 +926,30 @@ func NewParamsWithAddPropsRequest(server string, params *ParamsWithAddPropsParam
 
 	queryURL := serverURL.ResolveReference(&operationURL)
 
+	// queryValues collects non-styled parameters (passthrough, JSON)
+	// that are safe to round-trip through url.Values.Encode().
 	queryValues := queryURL.Query()
+	// rawQueryFragments collects pre-encoded query fragments from
+	// styled parameters, preserving literal commas as delimiters
+	// per the OpenAPI spec (e.g. "color=blue,black,brown").
+	var rawQueryFragments []string
 
 	if queryFrag, err := runtime.StyleParamWithLocation("simple", true, "p1", runtime.ParamLocationQuery, params.P1); err != nil {
 		return nil, err
-	} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-		return nil, err
 	} else {
-		for k, v := range parsed {
-			for _, v2 := range v {
-				queryValues.Add(k, v2)
-			}
-		}
+		rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 	}
 
 	if queryFrag, err := runtime.StyleParamWithLocation("form", true, "p2", runtime.ParamLocationQuery, params.P2); err != nil {
 		return nil, err
-	} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-		return nil, err
 	} else {
-		for k, v := range parsed {
-			for _, v2 := range v {
-				queryValues.Add(k, v2)
-			}
-		}
+		rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 	}
 
-	queryURL.RawQuery = queryValues.Encode()
+	if encoded := queryValues.Encode(); encoded != "" {
+		rawQueryFragments = append(rawQueryFragments, encoded)
+	}
+	queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
@@ -1314,7 +1311,7 @@ func (w *ServerInterfaceWrapper) ParamsWithAddProps(ctx echo.Context) error {
 	var params ParamsWithAddPropsParams
 	// ------------- Required query parameter "p1" -------------
 
-	err = runtime.BindQueryParameter("simple", true, true, "p1", ctx.QueryParams(), &params.P1)
+	err = runtime.BindRawQueryParameter("simple", true, true, "p1", ctx.QueryString(), &params.P1)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter p1: %s", err))
@@ -1323,7 +1320,7 @@ func (w *ServerInterfaceWrapper) ParamsWithAddProps(ctx echo.Context) error {
 
 	// ------------- Required query parameter "p2" -------------
 
-	err = runtime.BindQueryParameter("form", true, true, "p2", ctx.QueryParams(), &params.P2)
+	err = runtime.BindRawQueryParameter("form", true, true, "p2", ctx.QueryString(), &params.P2)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter p2: %s", err))

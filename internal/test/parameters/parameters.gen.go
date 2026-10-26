@@ -1074,21 +1074,24 @@ func NewGetDeepObjectRequest(server string, params *GetDeepObjectParams) (*http.
 
 	queryURL := serverURL.ResolveReference(&operationURL)
 
+	// queryValues collects non-styled parameters (passthrough, JSON)
+	// that are safe to round-trip through url.Values.Encode().
 	queryValues := queryURL.Query()
+	// rawQueryFragments collects pre-encoded query fragments from
+	// styled parameters, preserving literal commas as delimiters
+	// per the OpenAPI spec (e.g. "color=blue,black,brown").
+	var rawQueryFragments []string
 
 	if queryFrag, err := runtime.StyleParamWithLocation("deepObject", true, "deepObj", runtime.ParamLocationQuery, params.DeepObj); err != nil {
 		return nil, err
-	} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-		return nil, err
 	} else {
-		for k, v := range parsed {
-			for _, v2 := range v {
-				queryValues.Add(k, v2)
-			}
-		}
+		rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 	}
 
-	queryURL.RawQuery = queryValues.Encode()
+	if encoded := queryValues.Encode(); encoded != "" {
+		rawQueryFragments = append(rawQueryFragments, encoded)
+	}
+	queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
@@ -1117,20 +1120,20 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 	queryURL := serverURL.ResolveReference(&operationURL)
 
+	// queryValues collects non-styled parameters (passthrough, JSON)
+	// that are safe to round-trip through url.Values.Encode().
 	queryValues := queryURL.Query()
+	// rawQueryFragments collects pre-encoded query fragments from
+	// styled parameters, preserving literal commas as delimiters
+	// per the OpenAPI spec (e.g. "color=blue,black,brown").
+	var rawQueryFragments []string
 
 	if params.Ea != nil {
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "ea", runtime.ParamLocationQuery, *params.Ea); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1139,14 +1142,8 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", false, "a", runtime.ParamLocationQuery, *params.A); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1155,14 +1152,8 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "eo", runtime.ParamLocationQuery, *params.Eo); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1171,14 +1162,8 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", false, "o", runtime.ParamLocationQuery, *params.O); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1187,14 +1172,8 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "ep", runtime.ParamLocationQuery, *params.Ep); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1203,14 +1182,8 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", false, "p", runtime.ParamLocationQuery, *params.P); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1219,14 +1192,8 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 		if queryFrag, err := runtime.StyleParamWithLocation("form", true, "ps", runtime.ParamLocationQuery, *params.Ps); err != nil {
 			return nil, err
-		} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-			return nil, err
 		} else {
-			for k, v := range parsed {
-				for _, v2 := range v {
-					queryValues.Add(k, v2)
-				}
-			}
+			rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
 		}
 
 	}
@@ -1241,7 +1208,10 @@ func NewGetQueryFormRequest(server string, params *GetQueryFormParams) (*http.Re
 
 	}
 
-	queryURL.RawQuery = queryValues.Encode()
+	if encoded := queryValues.Encode(); encoded != "" {
+		rawQueryFragments = append(rawQueryFragments, encoded)
+	}
+	queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 
 	req, err := http.NewRequest("GET", queryURL.String(), nil)
 	if err != nil {
@@ -2897,7 +2867,7 @@ func (w *ServerInterfaceWrapper) GetDeepObject(ctx echo.Context) error {
 	var params GetDeepObjectParams
 	// ------------- Required query parameter "deepObj" -------------
 
-	err = runtime.BindQueryParameter("deepObject", true, true, "deepObj", ctx.QueryParams(), &params.DeepObj)
+	err = runtime.BindRawQueryParameter("deepObject", true, true, "deepObj", ctx.QueryString(), &params.DeepObj)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter deepObj: %s", err))
@@ -2917,7 +2887,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 	var params GetQueryFormParams
 	// ------------- Optional query parameter "ea" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "ea", ctx.QueryParams(), &params.Ea)
+	err = runtime.BindRawQueryParameter("form", true, false, "ea", ctx.QueryString(), &params.Ea)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ea: %s", err))
@@ -2926,7 +2896,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 
 	// ------------- Optional query parameter "a" -------------
 
-	err = runtime.BindQueryParameter("form", false, false, "a", ctx.QueryParams(), &params.A)
+	err = runtime.BindRawQueryParameter("form", false, false, "a", ctx.QueryString(), &params.A)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter a: %s", err))
@@ -2935,7 +2905,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 
 	// ------------- Optional query parameter "eo" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "eo", ctx.QueryParams(), &params.Eo)
+	err = runtime.BindRawQueryParameter("form", true, false, "eo", ctx.QueryString(), &params.Eo)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter eo: %s", err))
@@ -2944,7 +2914,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 
 	// ------------- Optional query parameter "o" -------------
 
-	err = runtime.BindQueryParameter("form", false, false, "o", ctx.QueryParams(), &params.O)
+	err = runtime.BindRawQueryParameter("form", false, false, "o", ctx.QueryString(), &params.O)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter o: %s", err))
@@ -2953,7 +2923,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 
 	// ------------- Optional query parameter "ep" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "ep", ctx.QueryParams(), &params.Ep)
+	err = runtime.BindRawQueryParameter("form", true, false, "ep", ctx.QueryString(), &params.Ep)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ep: %s", err))
@@ -2962,7 +2932,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 
 	// ------------- Optional query parameter "p" -------------
 
-	err = runtime.BindQueryParameter("form", false, false, "p", ctx.QueryParams(), &params.P)
+	err = runtime.BindRawQueryParameter("form", false, false, "p", ctx.QueryString(), &params.P)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter p: %s", err))
@@ -2971,7 +2941,7 @@ func (w *ServerInterfaceWrapper) GetQueryForm(ctx echo.Context) error {
 
 	// ------------- Optional query parameter "ps" -------------
 
-	err = runtime.BindQueryParameter("form", true, false, "ps", ctx.QueryParams(), &params.Ps)
+	err = runtime.BindRawQueryParameter("form", true, false, "ps", ctx.QueryString(), &params.Ps)
 	if err != nil {
 
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ps: %s", err))

@@ -217,7 +217,7 @@ func (siw *ServerInterfaceWrapper) GetWithArgs(w http.ResponseWriter, r *http.Re
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "optional_argument", r.URL.Query(), &params.OptionalArgument)
+	err = runtime.BindRawQueryParameter("form", true, false, "optional_argument", r.URL.RawQuery, &params.OptionalArgument)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid format for parameter optional_argument: %s", err), http.StatusBadRequest)
 		return
@@ -231,7 +231,7 @@ func (siw *ServerInterfaceWrapper) GetWithArgs(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = runtime.BindQueryParameter("form", true, true, "required_argument", r.URL.Query(), &params.RequiredArgument)
+	err = runtime.BindRawQueryParameter("form", true, true, "required_argument", r.URL.RawQuery, &params.RequiredArgument)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid format for parameter required_argument: %s", err), http.StatusBadRequest)
 		return
@@ -394,7 +394,7 @@ func (siw *ServerInterfaceWrapper) CreateResource2(w http.ResponseWriter, r *htt
 
 	}
 
-	err = runtime.BindQueryParameter("form", true, false, "inline_query_argument", r.URL.Query(), &params.InlineQueryArgument)
+	err = runtime.BindRawQueryParameter("form", true, false, "inline_query_argument", r.URL.RawQuery, &params.InlineQueryArgument)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid format for parameter inline_query_argument: %s", err), http.StatusBadRequest)
 		return
