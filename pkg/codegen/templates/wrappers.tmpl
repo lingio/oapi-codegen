@@ -34,7 +34,7 @@ func (w *ServerInterfaceWrapper) {{.OperationId}} (ctx echo.Context) error {
     var params {{.OperationId}}Params
 {{range $paramIdx, $param := .QueryParams}}// ------------- {{if .Required}}Required{{else}}Optional{{end}} query parameter "{{.ParamName}}" -------------
     {{if .IsStyled}}
-    err = runtime.BindQueryParameter("{{.Style}}", {{.Explode}}, {{or .Required .Schema.SkipOptionalPointer}}, "{{.ParamName}}", ctx.QueryParams(), &params.{{.GoName}})
+    err = runtime.BindRawQueryParameter("{{.Style}}", {{.Explode}}, {{or .Required .Schema.SkipOptionalPointer}}, "{{.ParamName}}", ctx.QueryString(), &params.{{.GoName}})
     if err != nil {
         {{if .Schema.SkipOptionalPointer}}
         if !strings.Contains(err.Error(), "is required") { // skip optional pointer

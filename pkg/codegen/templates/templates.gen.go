@@ -195,7 +195,7 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
           return
       }{{end}}
       {{if .IsStyled}}
-      err = runtime.BindQueryParameter("{{.Style}}", {{.Explode}}, {{.Required}}, "{{.ParamName}}", r.URL.Query(), &params.{{.GoName}})
+      err = runtime.BindRawQueryParameter("{{.Style}}", {{.Explode}}, {{.Required}}, "{{.ParamName}}", r.URL.RawQuery, &params.{{.GoName}})
       if err != nil {
         http.Error(w, fmt.Sprintf("Invalid format for parameter {{.ParamName}}: %s", err), http.StatusBadRequest)
         return
@@ -601,7 +601,13 @@ func New{{$opid}}Request{{if .HasBody}}WithBody{{end}}(server string{{genParamAr
     queryURL := serverURL.ResolveReference(&operationURL)
 
 {{if .QueryParams}}
+    // queryValues collects non-styled parameters (passthrough, JSON)
+    // that are safe to round-trip through url.Values.Encode().
     queryValues := queryURL.Query()
+    // rawQueryFragments collects pre-encoded query fragments from
+    // styled parameters, preserving literal commas as delimiters
+    // per the OpenAPI spec (e.g. "color=blue,black,brown").
+    var rawQueryFragments []string
 {{range $paramIdx, $param := .QueryParams}}
     {{if not .Required}} if params.{{.GoName}} != nil { {{end}}
     {{if .IsPassThrough}}
@@ -618,19 +624,16 @@ func New{{$opid}}Request{{if .HasBody}}WithBody{{end}}(server string{{genParamAr
     {{if .IsStyled}}
     if queryFrag, err := runtime.StyleParamWithLocation("{{.Style}}", {{.Explode}}, "{{.ParamName}}", runtime.ParamLocationQuery, {{if not .Required}}*{{end}}params.{{.GoName}}); err != nil {
         return nil, err
-    } else if parsed, err := url.ParseQuery(queryFrag); err != nil {
-       return nil, err
     } else {
-       for k, v := range parsed {
-           for _, v2 := range v {
-               queryValues.Add(k, v2)
-           }
-       }
+        rawQueryFragments = append(rawQueryFragments, strings.Split(queryFrag, "&")...)
     }
     {{end}}
     {{if not .Required}}}{{end}}
 {{end}}
-    queryURL.RawQuery = queryValues.Encode()
+    if encoded := queryValues.Encode(); encoded != "" {
+        rawQueryFragments = append(rawQueryFragments, encoded)
+    }
+    queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 {{end}}{{/* if .QueryParams */}}
     req, err := http.NewRequest("{{.Method}}", queryURL.String(), {{if .HasBody}}body{{else}}nil{{end}})
     if err != nil {
@@ -919,7 +922,7 @@ func (w *ServerInterfaceWrapper) {{.OperationId}} (ctx echo.Context) error {
     var params {{.OperationId}}Params
 {{range $paramIdx, $param := .QueryParams}}// ------------- {{if .Required}}Required{{else}}Optional{{end}} query parameter "{{.ParamName}}" -------------
     {{if .IsStyled}}
-    err = runtime.BindQueryParameter("{{.Style}}", {{.Explode}}, {{or .Required .Schema.SkipOptionalPointer}}, "{{.ParamName}}", ctx.QueryParams(), &params.{{.GoName}})
+    err = runtime.BindRawQueryParameter("{{.Style}}", {{.Explode}}, {{or .Required .Schema.SkipOptionalPointer}}, "{{.ParamName}}", ctx.QueryString(), &params.{{.GoName}})
     if err != nil {
         {{if .Schema.SkipOptionalPointer}}
         if !strings.Contains(err.Error(), "is required") { // skip optional pointer
